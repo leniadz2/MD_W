@@ -18,6 +18,7 @@ AS
   Date(YYYYMMDD)      Author              Comments
   ------------------- ------------------- ------------------------------------------------------------
   20210805            dÁlvarez            creación
+  20210809            dÁlvarez            ajustes
   
   ***************************************************************************************************/
 
@@ -55,7 +56,7 @@ SELECT DISTINCT
       ,SALDO
       ,INFOSALDO
       ,HORAHH AS HORA
-      ,MALL
+      ,ISNULL(MALL,'Otros')
       ,GENERO
       ,PERIODO
   FROM ods.GM_CLIENTE;
@@ -72,15 +73,25 @@ SELECT gm.DATE
       ,gm.AMBITO
       ,IIF(gm.AMBITO = 'Externo',IIF(gm.TIPO = 'Cash In',AMOUNT-COMMISSION,-AMOUNT),IIF(gm.TIPO = 'Cash In',AMOUNT,-AMOUNT)) AS SALDOBILL
       ,IIF(gm.AMBITO = 'Externo',IIF(gm.TIPO = 'Cash In',AMOUNT,-AMOUNT),IIF(gm.TIPO = 'Cash In',-AMOUNT-COMMISSION,0)) AS SALDOTARJ
-      ,gm.AFILIADO
+      ,ISNULL(gm.AFILIADO,'Otros')
       ,gm.PERIODO
   FROM ods.GM_MOVIMIENTOS gm;
 
 TRUNCATE TABLE bds.GM_COMPRAS;
 
 INSERT INTO bds.GM_COMPRAS
-SELECT --DISTINCT
-       gc.*
+SELECT gc.Message_Type
+      ,gc.Response_Code
+      ,gc.Card_Acceptor_Location
+      ,gc.Id_Canal
+      ,gc.Institucion_Receptora
+      ,gc.Codigo_Seguimiento
+      ,gc.TELEFONO
+      ,ISNULL(gc.MALL,'Otros')
+      ,gc.MONTO
+      ,gc.CONTADOR
+      ,gc.DIA
+      ,gc.PERIODO
   FROM ods.GM_COMPRAS gc;
 
 GO
