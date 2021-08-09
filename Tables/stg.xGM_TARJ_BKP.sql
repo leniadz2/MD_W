@@ -1,4 +1,4 @@
-﻿CREATE TABLE [stg].[GM_TARJ_BKP] (
+﻿CREATE TABLE [stg].[xGM_TARJ_BKP] (
   [ID_TARJETA] [varchar](50) NULL,
   [NRO_TARJETA] [varchar](50) NULL,
   [CODIGO_DE_SEGUIMIENTO] [varchar](50) NULL,

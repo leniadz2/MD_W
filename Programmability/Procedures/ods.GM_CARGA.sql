@@ -18,6 +18,7 @@ AS
   Date(YYYYMMDD)      Author              Comments
   ------------------- ------------------- ------------------------------------------------------------
   20210805            dÁlvarez            creación
+  20210809            dÁlvarez            ajustes
   
   ***************************************************************************************************/
 
@@ -37,7 +38,6 @@ SELECT CONCAT(RIGHT(CONCAT('00000000',NÚMERO_DE_DOCUMENTO),8),RIGHT(CONCAT('000
 
 TRUNCATE TABLE ods.GM_CLIENTE;
 
-INSERT INTO ods.GM_CLIENTE
 SELECT gc.document_type   ,
        gc.document_number ,
        gc.first_name      ,
@@ -47,6 +47,7 @@ SELECT gc.document_type   ,
        gc.email           ,
        gc.affiliate_code  ,
        gc.status          ,
+       gc.HABILITADO_RECARGA,
        gc.segmento        ,
        CONCAT(SUBSTRING(RIGHT(CONCAT('0',birth_date),19),7,4),SUBSTRING(RIGHT(CONCAT('0',birth_date),19),1,2),SUBSTRING(RIGHT(CONCAT('0',birth_date),19),4,2)) AS FECNACIMIENTO,
        DATEDIFF(YY, CONVERT(DATETIME, CONCAT(SUBSTRING(RIGHT(CONCAT('0',birth_date),19),7,4),SUBSTRING(RIGHT(CONCAT('0',birth_date),19),1,2),SUBSTRING(RIGHT(CONCAT('0',birth_date),19),4,2))), GETDATE()) -
@@ -59,16 +60,19 @@ SELECT gc.document_type   ,
          WHEN gc.document_type = 'Documento Nacional de Identidad' THEN 'DNI'
        END AS DOCUMENTO,
        CONCAT(SUBSTRING(gc.created_at,7,4),SUBSTRING(gc.created_at,1,2),SUBSTRING(gc.created_at,4,2)) AS FECHA,
+       SUBSTRING(gc.created_at,12,8) AS HORA,
+       SUBSTRING(gc.created_at,12,2) AS HORAHH,
        IIF(gc.affiliate_code IS NULL,'NO','SI') AS AFILIADOR,
-       SUBSTRING(gc.created_at,12,2) AS HORA,
        CASE
-         WHEN gc.affiliate_code IS NULL THEN NULL
+         --WHEN gc.affiliate_code IS NULL THEN NULL
+         WHEN gc.affiliate_code IS NULL THEN 'Otros'
          WHEN LEFT(gc.affiliate_code,1) = 'S' THEN 'Mall del Sur'
          WHEN LEFT(gc.affiliate_code,1) = 'P' THEN 'Plaza Norte'
          ELSE 'Otros'
        END AS MALL,
        CASE
-         WHEN gc.gender IS NULL THEN NULL
+         --WHEN gc.gender IS NULL THEN NULL
+         WHEN gc.gender IS NULL THEN 'Sin definir'
          WHEN gc.gender = '1' THEN 'Masculino'
          WHEN gc.gender = '0' THEN 'Femenino'
          ELSE 'Sin definir'
@@ -76,40 +80,64 @@ SELECT gc.document_type   ,
        CONCAT(SUBSTRING(gc.created_at,7,4),SUBSTRING(gc.created_at,1,2)) AS PERIODO,
        IIF(gs.SALDO IS NULL,'NO','SI') AS INFOSALDO,
        IIF(gs.SALDO IS NULL,0,gs.SALDO) AS SALDO
+  INTO ods.#GM_CLIENTE1
   FROM stg.GM_CUST gc 
          LEFT JOIN ods.GM_SALDO gs
            ON CONCAT(gc.DOCUMENT_NUMBER,gc.CELLPHONE) = gs.DNI_CELULAR
 
---SELECT COUNT(*) FROM stg.GM_CUST;--10075
---SELECT COUNT(*) FROM ods.GM_CLIENTE;--10493
+SELECT DISTINCT *
+  INTO ods.#GM_CLIENTE2
+  FROM ods.#GM_CLIENTE1;
 
-TRUNCATE TABLE ods.GM_COMPRAS;
+SELECT *,
+       ROW_NUMBER() OVER (PARTITION BY document_number ORDER BY FECHA DESC, HORA DESC) as ORDCREACION
+  INTO ods.#GM_CLIENTE3
+  FROM ods.#GM_CLIENTE2;
 
-INSERT INTO ods.GM_COMPRAS
-SELECT gs.Message_Type
-      ,gs.Response_Code
-      ,gs.Card_Acceptor_Location
-      ,gs.Id_Canal
-      ,gs.Institucion_Receptora
-      ,gs.Codigo_Seguimiento
-      ,gt.CELULAR AS TELEFONO
-      ,gc.MALL AS MALL
-      ,IIF(SUBSTRING(gs.Message_Type,1,4)='0400',CONVERT(float, gs.Transaction_Amount)*-1.0,CONVERT(float, gs.Transaction_Amount)*1.0) AS MONTO
-      ,IIF(SUBSTRING(gs.Message_Type,1,4)='0400',-1,1) AS CONTADOR
-      ,SUBSTRING(gs.Local_Transaction_Date,9,2) AS DIA
-      ,CONCAT(SUBSTRING(gs.Local_Transaction_Date,1,4),SUBSTRING(gs.Local_Transaction_Date,6,2)) AS PERIODO
-  FROM stg.GM_SWDM gs
-         LEFT JOIN stg.GM_TARJ gt ON gs.Codigo_Seguimiento = gt.CODIGO_DE_SEGUIMIENTO
-         LEFT JOIN ods.GM_CLIENTE gc ON RIGHT(gt.CELULAR,9) = gc.cellphone
+INSERT INTO ods.GM_CLIENTE
+SELECT DOCUMENT_TYPE
+      ,DOCUMENT_NUMBER
+      ,FIRST_NAME
+      ,SECOND_NAME
+      ,FIRST_SURNAME
+      ,CELLPHONE
+      ,EMAIL
+      ,AFFILIATE_CODE
+      ,STATUS
+      ,HABILITADO_RECARGA
+      ,SEGMENTO
+      ,FECNACIMIENTO
+      ,EDAD
+      ,DOCUMENTO
+      ,FECHA
+      ,HORA
+      ,HORAHH
+      ,AFILIADOR
+      ,MALL
+      ,GENERO
+      ,PERIODO
+      ,INFOSALDO
+      ,SALDO
+  FROM ods.#GM_CLIENTE3
+ WHERE ORDCREACION = 1;
+
+DROP TABLE ods.#GM_CLIENTE1;
+DROP TABLE ods.#GM_CLIENTE2;
+DROP TABLE ods.#GM_CLIENTE3;
 
 
 TRUNCATE TABLE ods.GM_MOVIMIENTOS;
 
 INSERT INTO ods.GM_MOVIMIENTOS
-SELECT gcm.DATE,
+SELECT gcm.TRANSACTION_ID,
+       gcm.MOBILE_NUMBER,
+       CONCAT(SUBSTRING(gcm.DATE,7,4),SUBSTRING(gcm.DATE,1,2),SUBSTRING(gcm.DATE,4,2)) AS DATE,
        CONVERT(float, gcm.AMOUNT)*1.0 AS AMOUNT,
        CONVERT(float, gcm.COMMISSION)*1.0 AS COMMISSION,
-       gcc.COD_CANAL AS CANAL,
+       --gcc.COD_CANAL AS CANAL,
+       IIF(gcc.COD_CANAL IS NULL,
+           'P2P',
+           gcc.COD_CANAL) AS CANAL,
        IIF(gcm.MERCHANT_CODE IS NULL,
            IIF(gcm.DESTINATION_MOBILE IS NULL,
                'A tarjeta',   
@@ -137,5 +165,25 @@ SELECT gcm.DATE,
   FROM stg.GM_CONC_MOV gcm
          LEFT JOIN stg.GM_CONC_CNL gcc ON gcm.TRANSACTION_ID = gcc.REF_NUMBER
          LEFT JOIN ods.GM_CLIENTE gc ON RIGHT(gcm.MOBILE_NUMBER,9) = gc.cellphone;
+
+
+TRUNCATE TABLE ods.GM_COMPRAS;
+
+INSERT INTO ods.GM_COMPRAS
+SELECT gs.Message_Type
+      ,gs.Response_Code
+      ,gs.Card_Acceptor_Location
+      ,gs.Id_Canal
+      ,gs.Institucion_Receptora
+      ,gs.Codigo_Seguimiento
+      ,gt.CELULAR AS TELEFONO
+      ,gc.MALL AS MALL
+      ,IIF(SUBSTRING(gs.Message_Type,1,4)='0400',CONVERT(float, gs.Transaction_Amount)*-1.0,CONVERT(float, gs.Transaction_Amount)*1.0) AS MONTO
+      ,IIF(SUBSTRING(gs.Message_Type,1,4)='0400',-1,1) AS CONTADOR
+      ,SUBSTRING(gs.Local_Transaction_Date,9,2) AS DIA
+      ,CONCAT(SUBSTRING(gs.Local_Transaction_Date,1,4),SUBSTRING(gs.Local_Transaction_Date,6,2)) AS PERIODO
+  FROM stg.GM_SWDM gs
+         LEFT JOIN stg.GM_TARJ gt ON gs.Codigo_Seguimiento = gt.CODIGO_DE_SEGUIMIENTO
+         LEFT JOIN ods.GM_CLIENTE gc ON RIGHT(gt.CELULAR,9) = gc.cellphone
 
 GO

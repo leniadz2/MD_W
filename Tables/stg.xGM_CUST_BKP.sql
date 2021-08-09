@@ -1,4 +1,4 @@
-﻿CREATE TABLE [stg].[GM_CUST_BKP] (
+﻿CREATE TABLE [stg].[xGM_CUST_BKP] (
   [DOCUMENT_TYPE] [varchar](50) NULL,
   [DOCUMENT_NUMBER] [varchar](50) NULL,
   [FIRST_NAME] [varchar](50) NULL,

@@ -1,4 +1,4 @@
-﻿CREATE TABLE [stg].[GM_SWDM_bkp] (
+﻿CREATE TABLE [stg].[xGM_SWDM_bkp] (
   [Message_Type] [varchar](50) NULL,
   [Ind_Store_Forward] [varchar](50) NULL,
   [Account_Number] [varchar](50) NULL,

@@ -1,4 +1,6 @@
 ﻿CREATE TABLE [ods].[GM_MOVIMIENTOS] (
+  [TRANSACTION_ID] [varchar](50) NULL,
+  [MOBILE_NUMBER] [varchar](50) NULL,
   [DATE] [varchar](50) NULL,
   [AMOUNT] [float] NULL,
   [COMMISSION] [float] NULL,

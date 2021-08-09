@@ -8,6 +8,7 @@
   [email] [varchar](50) NULL,
   [affiliate_code] [varchar](50) NULL,
   [status] [varchar](50) NULL,
+  [HABILITADO_RECARGA] [varchar](50) NULL,
   [segmento] [varchar](50) NULL,
   [FECNACIMIENTO] [varchar](8) NOT NULL,
   [EDAD] [int] NULL,

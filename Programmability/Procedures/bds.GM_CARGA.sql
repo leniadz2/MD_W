@@ -24,7 +24,8 @@ AS
 TRUNCATE TABLE bds.GM_CLIENTE;
 
 INSERT INTO bds.GM_CLIENTE
-SELECT document_type
+SELECT DISTINCT
+       document_type
       ,document_number
       ,first_name
       ,second_name
@@ -33,6 +34,7 @@ SELECT document_type
       ,email
       ,affiliate_code
       ,status
+      ,HABILITADO_RECARGA
       ,segmento
       ,FECNACIMIENTO
       ,EDAD
@@ -52,13 +54,13 @@ SELECT document_type
       ,AFILIADOR
       ,SALDO
       ,INFOSALDO
-      ,HORA
+      ,HORAHH AS HORA
       ,MALL
       ,GENERO
       ,PERIODO
-  FROM ods.GM_CLIENTE
+  FROM ods.GM_CLIENTE;
 
-TRUNCATE TABLE bds.GM_CLIENTE;
+TRUNCATE TABLE bds.GM_MOVIMIENTOS;
 
 INSERT INTO bds.GM_MOVIMIENTOS
 SELECT gm.DATE
@@ -72,7 +74,13 @@ SELECT gm.DATE
       ,IIF(gm.AMBITO = 'Externo',IIF(gm.TIPO = 'Cash In',AMOUNT,-AMOUNT),IIF(gm.TIPO = 'Cash In',-AMOUNT-COMMISSION,0)) AS SALDOTARJ
       ,gm.AFILIADO
       ,gm.PERIODO
-  FROM ods.GM_MOVIMIENTOS gm
+  FROM ods.GM_MOVIMIENTOS gm;
 
+TRUNCATE TABLE bds.GM_COMPRAS;
+
+INSERT INTO bds.GM_COMPRAS
+SELECT --DISTINCT
+       gc.*
+  FROM ods.GM_COMPRAS gc;
 
 GO
