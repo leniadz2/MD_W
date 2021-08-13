@@ -36,7 +36,18 @@ SELECT DISTINCT
       ,affiliate_code
       ,status
       ,HABILITADO_RECARGA
-      ,segmento
+      --,segmento
+      ,CASE 
+         WHEN EDAD >=  0 AND EDAD < 18 THEN '0'
+         WHEN EDAD >= 18 AND EDAD < 21 THEN 'A'
+         WHEN EDAD >= 21 AND EDAD < 26 THEN 'B'
+         WHEN EDAD >= 26 AND EDAD < 31 THEN 'C'
+         WHEN EDAD >= 31 AND EDAD < 41 THEN 'D'
+         WHEN EDAD >= 41 AND EDAD < 51 THEN 'E'
+         WHEN EDAD >= 51 AND EDAD < 61 THEN 'F'
+         WHEN EDAD >= 61 AND EDAD < 99 THEN 'G'
+         ELSE 'No definido'      
+       END AS SEGMENTO
       ,FECNACIMIENTO
       ,EDAD
       ,CASE 
